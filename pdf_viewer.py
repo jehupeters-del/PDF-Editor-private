@@ -3,10 +3,11 @@ PDF Viewer - Handles PDF page rendering and display
 """
 import tkinter as tk
 from tkinter import ttk
-from PIL import Image, ImageTk
 import fitz  # PyMuPDF
 from pathlib import Path
 from typing import Callable, Optional
+import base64
+import io
 
 
 class PDFViewer:
@@ -26,8 +27,9 @@ class PDFViewer:
         """
         frame = ttk.Frame(parent, relief=tk.RAISED, borderwidth=2)
         
-        # Generate thumbnail
-        thumbnail = PDFViewer.generate_thumbnail_from_path(pdf_path, page['page_index'], width=150)
+        # Generate thumbnail (pass parent as master for the PhotoImage to ensure same Tcl interpreter)
+        master = parent.winfo_toplevel() if hasattr(parent, 'winfo_toplevel') else None
+        thumbnail = PDFViewer.generate_thumbnail_from_path(pdf_path, page['page_index'], width=150, master=master)
         
         if thumbnail:
             # Display thumbnail
@@ -68,9 +70,10 @@ class PDFViewer:
         return frame
         
     @staticmethod        
-    def generate_thumbnail_from_path(pdf_path: str, page_index: int, width: int = 150) -> Optional[ImageTk.PhotoImage]:
+    def generate_thumbnail_from_path(pdf_path: str, page_index: int, width: int = 150, master: tk.Misc = None) -> Optional[tk.PhotoImage]:
         """
         Generate a thumbnail image from a PDF page using PyMuPDF
+        Uses PNG bytes from PyMuPDF and Tk's PhotoImage to avoid Pillow dependency.
         
         Args:
             pdf_path: Path to the PDF file
@@ -96,14 +99,22 @@ class PDFViewer:
             mat = fitz.Matrix(zoom, zoom)
             pix = page.get_pixmap(matrix=mat)
             
-            # Convert to PIL Image
-            img = Image.frombytes("RGB", [pix.width, pix.height], pix.samples)
+            # Try to get PNG bytes from pixmap (API varies across versions)
+            try:
+                png_bytes = pix.tobytes("png")
+            except TypeError:
+                # Fallback for other PyMuPDF versions
+                png_bytes = pix.getPNGData()
             
             # Close document
             doc.close()
             
-            # Convert to PhotoImage
-            return ImageTk.PhotoImage(img)
+            # Encode PNG as base64 and return a Tk PhotoImage (attach to the provided master or the default root)
+            b64 = base64.b64encode(png_bytes).decode('ascii')
+            final_master = master if master is not None else (tk._default_root if getattr(tk, "_default_root", None) is not None else None)
+            if final_master:
+                return tk.PhotoImage(master=final_master, data=b64)
+            return tk.PhotoImage(data=b64)
             
         except Exception as e:
             print(f"Error generating thumbnail: {e}")

@@ -61,9 +61,16 @@ python main.py
 - **Python 3** - Core language
 - **tkinter** - GUI framework (built into Python)
 - **PyPDF2** - PDF manipulation and merging
-- **Pillow (PIL)** - Image processing
+- **Pillow (PIL)** - Image processing (optional — not required for thumbnail generation)
 - **pdf2image** - PDF to image conversion
+- **PyMuPDF (fitz)** - Used for thumbnail generation (preferred). Thumbnails are generated from page PNG bytes via PyMuPDF and displayed with `tk.PhotoImage`, so Pillow is optional.
 
+### Running tests
+
+- Install test runner: `pip install pytest`
+- Run tests: `pytest`
+
+Note: Some tests require a working Tcl/Tk installation. If Tcl/Tk isn't available in your environment those tests will be skipped.
 ## Project Structure
 
 ```
