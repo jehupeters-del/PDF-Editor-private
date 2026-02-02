@@ -1,0 +1,175 @@
+{% extends "base.html" %}
+
+{% block title %}{{ pdf_info.name }} - PDF Editor{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <!-- Sidebar -->
+        <div class="col-md-3 sidebar p-3">
+            <h5 class="mb-3">PDF Documents</h5>
+            
+            <div class="btn-group w-100 mb-3" role="group">
+                <form action="{{ url_for('new_project') }}" method="POST" class="flex-fill" style="display: inline;">
+                    <button type="submit" class="btn btn-outline-secondary w-100" onclick="return confirm('Clear all PDFs and start new?');">
+                        <i class="bi bi-plus-circle"></i> New
+                    </button>
+                </form>
+                <button type="button" class="btn btn-primary flex-fill" data-bs-toggle="modal" data-bs-target="#uploadModal">
+                    <i class="bi bi-upload"></i> Load
+                </button>
+            </div>
+            
+            <div class="list-group mb-3">
+                <!-- This would be populated from session data -->
+                <div class="alert alert-secondary" role="alert">
+                    <small><i class="bi bi-info-circle"></i> Go to <a href="{{ url_for('index') }}">Home</a> to see all PDFs</small>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Main Area -->
+        <div class="col-md-9 p-4">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h3>{{ pdf_info.name }}</h3>
+                <a href="{{ url_for('index') }}" class="btn btn-outline-secondary">
+                    <i class="bi bi-arrow-left"></i> Back to Home
+                </a>
+            </div>
+            
+            <!-- Page Grid -->
+            <div class="page-grid">
+                {% for page in pages %}
+                    <div class="page-thumbnail {% if page.selected %}selected{% endif %}" data-page-id="{{ page.id }}" onclick="togglePageSelection('{{ page.id }}')">
+                        {% if page.thumbnail %}
+                            <img src="{{ page.thumbnail }}" alt="Page {{ page.page_num }}" loading="lazy">
+                        {% else %}
+                            <div class="text-center p-4 bg-light">
+                                <i class="bi bi-file-earmark" style="font-size: 48px;"></i>
+                            </div>
+                        {% endif %}
+                        <div class="page-number">Page {{ page.page_num }}</div>
+                        <form action="{{ url_for('remove_page', page_id=page.id) }}" method="POST" class="remove-btn" onsubmit="event.stopPropagation();">
+                            <button type="submit" class="btn btn-sm btn-danger" onclick="return confirm('Remove this page?');">
+                                <i class="bi bi-trash"></i>
+                            </button>
+                        </form>
+                    </div>
+                {% endfor %}
+            </div>
+            
+            {% if not pages %}
+                <div class="alert alert-info mt-4">
+                    <i class="bi bi-info-circle"></i> No pages available in this PDF
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<!-- Bottom Bar -->
+<div class="bottom-bar">
+    <div class="container-fluid">
+        <div class="d-flex justify-content-between align-items-center">
+            <div>
+                <strong>{{ total_pages }} pages total</strong>
+                <span class="ms-3" id="selectedCount">
+                    <span class="badge bg-primary" id="selectedBadge" style="display: none;"></span>
+                </span>
+            </div>
+            <div>
+                <form action="{{ url_for('remove_selected_pages') }}" method="POST" style="display: inline;" id="removeSelectedForm">
+                    <button type="submit" class="btn btn-warning me-2" id="removeSelectedBtn" disabled>
+                        <i class="bi bi-trash"></i> Remove Selected Pages
+                    </button>
+                </form>
+                <form action="{{ url_for('merge_pdfs') }}" method="POST" style="display: inline;">
+                    <button type="submit" class="btn btn-success">
+                        <i class="bi bi-file-earmark-arrow-down"></i> Merge & Download PDF
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Upload Modal -->
+<div class="modal fade" id="uploadModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Load PDF Files</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form action="{{ url_for('upload_pdfs') }}" method="POST" enctype="multipart/form-data">
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label for="pdfFiles" class="form-label">Select PDF files</label>
+                        <input class="form-control" type="file" id="pdfFiles" name="pdfs" accept=".pdf" multiple required>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Upload</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+let selectedPages = new Set();
+
+{% for page in pages %}
+    {% if page.selected %}
+        selectedPages.add('{{ page.id }}');
+    {% endif %}
+{% endfor %}
+
+function togglePageSelection(pageId) {
+    const element = document.querySelector(`[data-page-id="${pageId}"]`);
+    
+    fetch(`/toggle-page/${pageId}`, {method: 'POST'})
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                if (data.selected) {
+                    selectedPages.add(pageId);
+                    element.classList.add('selected');
+                } else {
+                    selectedPages.delete(pageId);
+                    element.classList.remove('selected');
+                }
+                updateSelectedCount();
+            }
+        });
+}
+
+function updateSelectedCount() {
+    const count = selectedPages.size;
+    const badge = document.getElementById('selectedBadge');
+    const removeBtn = document.getElementById('removeSelectedBtn');
+    
+    if (count > 0) {
+        badge.textContent = `${count} selected`;
+        badge.style.display = 'inline';
+        removeBtn.disabled = false;
+    } else {
+        badge.style.display = 'none';
+        removeBtn.disabled = true;
+    }
+}
+
+// Initialize on page load
+updateSelectedCount();
+
+// Confirm before removing selected pages
+document.getElementById('removeSelectedForm').addEventListener('submit', function(e) {
+    if (!confirm(`Remove ${selectedPages.size} selected page(s)?`)) {
+        e.preventDefault();
+    }
+});
+</script>
+{% endblock %}

@@ -1,0 +1,86 @@
+{% extends "base.html" %}
+
+{% block title %}Validate Questions - PDF Editor{% endblock %}
+
+{% block content %}
+<div class="container mt-5">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card shadow">
+                <div class="card-header bg-success text-white">
+                    <h4 class="mb-0"><i class="bi bi-check-circle"></i> Validate Question Continuity</h4>
+                </div>
+                <div class="card-body">
+                    <p class="lead">Check if all question numbers from 1 to N are present in your PDF.</p>
+                    
+                    <!-- Mode Selection -->
+                    <ul class="nav nav-tabs mb-4" id="modeTabs" role="tablist">
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link active" id="single-tab" data-bs-toggle="tab" data-bs-target="#single" type="button" role="tab">
+                                <i class="bi bi-file-earmark"></i> Single PDF
+                            </button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link" id="batch-tab" data-bs-toggle="tab" data-bs-target="#batch" type="button" role="tab">
+                                <i class="bi bi-files"></i> Batch Mode
+                            </button>
+                        </li>
+                    </ul>
+                    
+                    <div class="tab-content" id="modeTabsContent">
+                        <!-- Single Mode -->
+                        <div class="tab-pane fade show active" id="single" role="tabpanel">
+                            <form action="{{ url_for('validate_questions') }}" method="POST" enctype="multipart/form-data">
+                                <input type="hidden" name="mode" value="single">
+                                <div class="mb-3">
+                                    <label for="singlePdf" class="form-label">Select PDF File</label>
+                                    <input class="form-control form-control-lg" type="file" id="singlePdf" name="pdf" accept=".pdf" required>
+                                    <div class="form-text">Choose one PDF file to validate</div>
+                                </div>
+                                <button type="submit" class="btn btn-success btn-lg w-100">
+                                    <i class="bi bi-check-circle"></i> Validate Questions
+                                </button>
+                            </form>
+                        </div>
+                        
+                        <!-- Batch Mode -->
+                        <div class="tab-pane fade" id="batch" role="tabpanel">
+                            <form action="{{ url_for('validate_questions') }}" method="POST" enctype="multipart/form-data">
+                                <input type="hidden" name="mode" value="batch">
+                                <div class="mb-3">
+                                    <label for="batchPdfs" class="form-label">Select Multiple PDF Files</label>
+                                    <input class="form-control form-control-lg" type="file" id="batchPdfs" name="pdfs" accept=".pdf" multiple required>
+                                    <div class="form-text">Hold Ctrl (Cmd on Mac) to select multiple files</div>
+                                </div>
+                                <button type="submit" class="btn btn-success btn-lg w-100">
+                                    <i class="bi bi-check-circle"></i> Validate All
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                    
+                    <!-- How it works -->
+                    <div class="card mt-4 bg-light">
+                        <div class="card-body">
+                            <h6 class="card-title"><i class="bi bi-question-circle"></i> How it works:</h6>
+                            <ul class="mb-0">
+                                <li>Searches for "Question {number}" pattern throughout the PDF</li>
+                                <li>Finds the maximum question number (e.g., Question 47)</li>
+                                <li>Verifies all numbers from 1 to max are present</li>
+                                <li>Reports any missing question numbers</li>
+                                <li>Batch mode allows validating multiple PDFs at once</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="text-center mt-3">
+                <a href="{{ url_for('index') }}" class="btn btn-outline-secondary">
+                    <i class="bi bi-arrow-left"></i> Back to Home
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

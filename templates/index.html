@@ -1,0 +1,127 @@
+{% extends "base.html" %}
+
+{% block title %}PDF Editor - Home{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <!-- Sidebar -->
+        <div class="col-md-3 sidebar p-3">
+            <h5 class="mb-3">PDF Documents</h5>
+            
+            <!-- Action Buttons -->
+            <div class="btn-group w-100 mb-3" role="group">
+                <form action="{{ url_for('new_project') }}" method="POST" class="flex-fill" style="display: inline;">
+                    <button type="submit" class="btn btn-outline-secondary w-100" onclick="return confirm('Clear all PDFs and start new?');">
+                        <i class="bi bi-plus-circle"></i> New
+                    </button>
+                </form>
+                <button type="button" class="btn btn-primary flex-fill" data-bs-toggle="modal" data-bs-target="#uploadModal">
+                    <i class="bi bi-upload"></i> Load PDFs
+                </button>
+            </div>
+            
+            <!-- PDF List -->
+            <div class="list-group mb-3">
+                {% if pdfs %}
+                    {% for pdf_id, pdf_info in pdfs.items() %}
+                        <a href="{{ url_for('view_pdf', pdf_id=pdf_id) }}" 
+                           class="list-group-item list-group-item-action pdf-list-item {% if pdf_id == selected_pdf_id %}active{% endif %}">
+                            <div class="d-flex justify-content-between align-items-start">
+                                <div class="flex-grow-1">
+                                    <strong>{{ pdf_info.name }}</strong>
+                                    <br>
+                                    <small class="{% if pdf_id == selected_pdf_id %}text-white-50{% else %}text-muted{% endif %}">
+                                        {{ pdf_info.page_count }} pages
+                                    </small>
+                                </div>
+                                <form action="{{ url_for('remove_pdf', pdf_id=pdf_id) }}" method="POST" style="display: inline;">
+                                    <button type="submit" class="btn btn-sm btn-danger" onclick="event.stopPropagation(); return confirm('Remove this PDF?');">
+                                        <i class="bi bi-trash"></i>
+                                    </button>
+                                </form>
+                            </div>
+                        </a>
+                    {% endfor %}
+                {% else %}
+                    <div class="alert alert-info" role="alert">
+                        <i class="bi bi-info-circle"></i> No PDFs loaded. Click "Load PDFs" to start.
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+        
+        <!-- Main Area -->
+        <div class="col-md-9 p-4">
+            {% if selected_pdf_id %}
+                <div class="alert alert-info">
+                    <i class="bi bi-info-circle"></i> Click on a PDF in the sidebar to view its pages
+                </div>
+            {% else %}
+                <div class="text-center mt-5">
+                    <i class="bi bi-file-earmark-pdf" style="font-size: 120px; color: #6c757d;"></i>
+                    <h2 class="mt-4">Welcome to PDF Editor</h2>
+                    <p class="lead text-muted">Load PDFs to get started</p>
+                    
+                    <div class="mt-4">
+                        <button type="button" class="btn btn-primary btn-lg me-2" data-bs-toggle="modal" data-bs-target="#uploadModal">
+                            <i class="bi bi-upload"></i> Load PDFs
+                        </button>
+                        <a href="{{ url_for('extract_questions') }}" class="btn btn-outline-primary btn-lg me-2">
+                            <i class="bi bi-scissors"></i> Extract Questions
+                        </a>
+                        <a href="{{ url_for('validate_questions') }}" class="btn btn-outline-primary btn-lg">
+                            <i class="bi bi-check-circle"></i> Validate Questions
+                        </a>
+                    </div>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<!-- Bottom Bar -->
+{% if total_pages > 0 %}
+<div class="bottom-bar">
+    <div class="container-fluid">
+        <div class="d-flex justify-content-between align-items-center">
+            <div>
+                <strong>{{ total_pages }} pages total</strong>
+            </div>
+            <div>
+                <form action="{{ url_for('merge_pdfs') }}" method="POST" style="display: inline;">
+                    <button type="submit" class="btn btn-success">
+                        <i class="bi bi-file-earmark-arrow-down"></i> Merge & Download PDF
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<!-- Upload Modal -->
+<div class="modal fade" id="uploadModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Load PDF Files</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form action="{{ url_for('upload_pdfs') }}" method="POST" enctype="multipart/form-data">
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label for="pdfFiles" class="form-label">Select PDF files (multiple selection supported)</label>
+                        <input class="form-control" type="file" id="pdfFiles" name="pdfs" accept=".pdf" multiple required>
+                        <div class="form-text">You can select multiple PDF files at once</div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Upload</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

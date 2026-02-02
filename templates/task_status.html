@@ -1,0 +1,324 @@
+{% extends "base.html" %}
+
+{% block title %}Task Status - PDF Editor{% endblock %}
+
+{% block content %}
+<div class="container mt-5">
+    <div class="row justify-content-center">
+        <div class="col-md-10">
+            <div class="card shadow">
+                <div class="card-body text-center p-5" id="statusContainer">
+                    <!-- Loading State -->
+                    <div id="loadingState">
+                        <div class="spinner-border text-primary" role="status" style="width: 4rem; height: 4rem;">
+                            <span class="visually-hidden">Loading...</span>
+                        </div>
+                        <h3 class="mt-4">Processing...</h3>
+                        <p class="text-muted" id="progressText">Please wait</p>
+                    </div>
+                    
+                    <!-- Results will be injected here -->
+                    <div id="resultsContainer" style="display: none;"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+const taskId = '{{ task_id }}';
+let pollInterval;
+
+function pollTaskStatus() {
+    fetch(`/api/task/${taskId}`)
+        .then(response => response.json())
+        .then(data => {
+            console.log('Task status:', data);
+            
+            if (data.status === 'starting' || data.status === 'processing') {
+                if (data.progress) {
+                    document.getElementById('progressText').textContent = `Processing: ${data.progress}`;
+                }
+            } else if (data.status === 'completed') {
+                clearInterval(pollInterval);
+                showResults(data);
+            } else if (data.status === 'error') {
+                clearInterval(pollInterval);
+                showError(data.error);
+            }
+        })
+        .catch(error => {
+            console.error('Polling error:', error);
+        });
+}
+
+function showResults(data) {
+    document.getElementById('loadingState').style.display = 'none';
+    document.getElementById('resultsContainer').style.display = 'block';
+    
+    const container = document.getElementById('resultsContainer');
+    
+    if (data.mode === 'extract_single') {
+        showExtractionResults(data, container);
+    } else if (data.mode === 'extract_batch') {
+        showBatchExtractionResults(data, container);
+    } else if (data.mode === 'validate_single') {
+        showValidationResults(data, container);
+    } else if (data.mode === 'validate_batch') {
+        showBatchValidationResults(data, container);
+    }
+}
+
+function showExtractionResults(data, container) {
+    const reduction = data.orig_pages - data.new_pages;
+    const reductionPct = data.orig_pages > 0 ? (reduction / data.orig_pages * 100).toFixed(1) : 0;
+    
+    let html = `
+        <i class="bi bi-scissors text-primary" style="font-size: 64px;"></i>
+        <h2 class="mt-3">Question Pages Extracted</h2>
+        
+        <div class="card text-start mt-4">
+            <div class="card-header"><strong>File Information</strong></div>
+            <div class="card-body">
+                <p><strong>Source:</strong> ${data.input_name}</p>
+                <p><strong>Output:</strong> ${data.output_name}</p>
+            </div>
+        </div>
+        
+        <div class="card text-start mt-3">
+            <div class="card-header"><strong>Extraction Statistics</strong></div>
+            <div class="card-body">
+                <p class="text-primary"><strong>Pages: ${data.orig_pages} → ${data.new_pages}</strong> (removed ${reduction} pages, ${reductionPct}% reduction)</p>
+                <p><strong>Questions found:</strong> ${data.questions.length} unique (${Math.min(...data.questions)} to ${Math.max(...data.questions)})</p>
+            </div>
+        </div>
+        
+        <div class="card text-start mt-3">
+            <div class="card-header"><strong>Validation Check</strong></div>
+            <div class="card-body text-center">
+    `;
+    
+    if (data.is_valid) {
+        html += `
+                <i class="bi bi-check-circle-fill text-success" style="font-size: 48px;"></i>
+                <h4 class="text-success mt-3">All questions present!</h4>
+                <p>Questions 1-${data.max_question} all accounted for.</p>
+        `;
+    } else {
+        html += `
+                <i class="bi bi-exclamation-triangle-fill text-warning" style="font-size: 48px;"></i>
+                <h4 class="text-danger mt-3">WARNING: ${data.missing.length} question(s) missing!</h4>
+                <p class="text-danger">Expected: 1-${data.max_question} | Missing: ${data.missing.slice(0, 20).join(', ')}${data.missing.length > 20 ? '...' : ''}</p>
+        `;
+    }
+    
+    html += `
+            </div>
+        </div>
+        
+        <div class="mt-4">
+            <a href="/download/${taskId}/0" class="btn btn-success btn-lg me-2">
+                <i class="bi bi-download"></i> Download Extracted PDF
+            </a>
+            <a href="/" class="btn btn-outline-secondary btn-lg">
+                <i class="bi bi-house"></i> Back to Home
+            </a>
+        </div>
+    `;
+    
+    container.innerHTML = html;
+}
+
+function showBatchExtractionResults(data, container) {
+    const results = data.results || [];
+    const successCount = results.filter(r => !r.error).length;
+    const errorCount = results.filter(r => r.error).length;
+    const validCount = results.filter(r => r.is_valid && !r.error).length;
+    
+    let html = `
+        <i class="bi bi-scissors text-primary" style="font-size: 64px;"></i>
+        <h2 class="mt-3">Batch Extraction Results</h2>
+        <p class="lead">${results.length} PDF(s) processed</p>
+        
+        <div class="alert alert-info">
+            ✅ ${successCount} Success | ✅ ${validCount} Valid | ⚠️ ${successCount - validCount} Warnings | ❌ ${errorCount} Errors
+        </div>
+        
+        <div class="text-start mt-4">
+    `;
+    
+    results.forEach((result, index) => {
+        const reduction = result.orig_pages - result.new_pages;
+        const reductionPct = result.orig_pages > 0 ? (reduction / result.orig_pages * 100).toFixed(1) : 0;
+        
+        html += `
+            <div class="card mb-3">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <strong>#${index + 1}: ${result.input_name}</strong>
+                    ${result.error ? '<span class="badge bg-danger">Error</span>' : result.is_valid ? '<span class="badge bg-success">Valid</span>' : '<span class="badge bg-warning">Warning</span>'}
+                </div>
+                <div class="card-body">
+        `;
+        
+        if (result.error) {
+            html += `<p class="text-danger"><i class="bi bi-x-circle"></i> ${result.error}</p>`;
+        } else {
+            html += `
+                    <p><strong>Output:</strong> ${result.output_name}</p>
+                    <p><strong>Pages:</strong> ${result.orig_pages} → ${result.new_pages} (${reductionPct}% reduction)</p>
+                    ${result.is_valid ? '<p class="text-success">✓ All questions present</p>' : `<p class="text-warning">⚠ Missing ${result.missing.length} question(s)</p>`}
+                    <a href="/download/${taskId}/${index}" class="btn btn-sm btn-primary">
+                        <i class="bi bi-download"></i> Download
+                    </a>
+            `;
+        }
+        
+        html += `
+                </div>
+            </div>
+        `;
+    });
+    
+    html += `
+        </div>
+        <div class="mt-4">
+            <a href="/" class="btn btn-outline-secondary btn-lg">
+                <i class="bi bi-house"></i> Back to Home
+            </a>
+        </div>
+    `;
+    
+    container.innerHTML = html;
+}
+
+function showValidationResults(data, container) {
+    let html = `
+        <i class="bi bi-check-circle text-success" style="font-size: 64px;"></i>
+        <h2 class="mt-3">Validation Results</h2>
+        <p class="lead">${data.file_name}</p>
+        
+        <div class="card mt-4">
+            <div class="card-body text-center">
+    `;
+    
+    if (data.max_question === 0) {
+        html += `
+                <i class="bi bi-info-circle text-muted" style="font-size: 48px;"></i>
+                <h4 class="mt-3">No questions found</h4>
+                <p class="text-muted">The validator searches for "Question {number}" pattern</p>
+        `;
+    } else if (data.is_valid) {
+        html += `
+                <i class="bi bi-check-circle-fill text-success" style="font-size: 48px;"></i>
+                <h4 class="text-success mt-3">All questions present!</h4>
+                <p>Questions 1 to ${data.max_question} are all accounted for.</p>
+                <p class="text-muted">Total questions: ${data.max_question}</p>
+        `;
+    } else {
+        html += `
+                <i class="bi bi-exclamation-triangle-fill text-warning" style="font-size: 48px;"></i>
+                <h4 class="text-danger mt-3">Missing Questions Detected!</h4>
+                <p><strong>Expected range:</strong> 1 to ${data.max_question}</p>
+                <p class="text-danger"><strong>Missing:</strong> ${data.missing.length} question(s)</p>
+                ${data.missing.includes(1) ? '<p class="text-warning">⚠️ Critical: Question 1 is missing!</p>' : ''}
+                <div class="alert alert-danger text-start mt-3">
+                    <strong>Missing Question Numbers:</strong><br>
+                    ${data.missing.slice(0, 50).join(', ')}${data.missing.length > 50 ? '...' : ''}
+                </div>
+        `;
+    }
+    
+    html += `
+            </div>
+        </div>
+        
+        <div class="mt-4">
+            <a href="/" class="btn btn-outline-secondary btn-lg">
+                <i class="bi bi-house"></i> Back to Home
+            </a>
+        </div>
+    `;
+    
+    container.innerHTML = html;
+}
+
+function showBatchValidationResults(data, container) {
+    const results = data.results || [];
+    const validCount = results.filter(r => r.is_valid && !r.error).length;
+    const invalidCount = results.filter(r => !r.is_valid && !r.error).length;
+    const errorCount = results.filter(r => r.error).length;
+    
+    let html = `
+        <i class="bi bi-check-circle text-success" style="font-size: 64px;"></i>
+        <h2 class="mt-3">Batch Validation Results</h2>
+        <p class="lead">${results.length} PDF(s) validated</p>
+        
+        <div class="alert alert-info">
+            ✅ ${validCount} Valid | ⚠️ ${invalidCount} Issues | ❌ ${errorCount} Errors
+        </div>
+        
+        <div class="text-start mt-4">
+    `;
+    
+    results.forEach((result, index) => {
+        html += `
+            <div class="card mb-3">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <strong>#${index + 1}: ${result.file_name}</strong>
+                    ${result.error ? '<span class="badge bg-danger">Error</span>' : result.max_question === 0 ? '<span class="badge bg-secondary">No Questions</span>' : result.is_valid ? '<span class="badge bg-success">Valid</span>' : '<span class="badge bg-warning">Issues</span>'}
+                </div>
+                <div class="card-body">
+        `;
+        
+        if (result.error) {
+            html += `<p class="text-danger"><i class="bi bi-x-circle"></i> ${result.error}</p>`;
+        } else if (result.max_question === 0) {
+            html += `<p class="text-muted">No questions found in this PDF</p>`;
+        } else if (result.is_valid) {
+            html += `<p class="text-success"><i class="bi bi-check-circle"></i> All questions present (1-${result.max_question})</p>`;
+        } else {
+            html += `
+                    <p class="text-danger"><i class="bi bi-exclamation-triangle"></i> Missing ${result.missing.length} question(s)</p>
+                    <p><small>Expected: 1-${result.max_question} | Missing: ${result.missing.slice(0, 10).join(', ')}${result.missing.length > 10 ? '...' : ''}</small></p>
+                    ${result.missing.includes(1) ? '<p class="text-warning small">⚠️ Critical: Question 1 missing!</p>' : ''}
+            `;
+        }
+        
+        html += `
+                </div>
+            </div>
+        `;
+    });
+    
+    html += `
+        </div>
+        <div class="mt-4">
+            <a href="/" class="btn btn-outline-secondary btn-lg">
+                <i class="bi bi-house"></i> Back to Home
+            </a>
+        </div>
+    `;
+    
+    container.innerHTML = html;
+}
+
+function showError(error) {
+    document.getElementById('loadingState').style.display = 'none';
+    document.getElementById('resultsContainer').style.display = 'block';
+    document.getElementById('resultsContainer').innerHTML = `
+        <i class="bi bi-x-circle text-danger" style="font-size: 64px;"></i>
+        <h2 class="mt-3 text-danger">Error</h2>
+        <p class="text-muted">${error}</p>
+        <a href="/" class="btn btn-outline-secondary btn-lg mt-3">
+            <i class="bi bi-house"></i> Back to Home
+        </a>
+    `;
+}
+
+// Start polling
+pollInterval = setInterval(pollTaskStatus, 1000);
+pollTaskStatus(); // Initial call
+</script>
+{% endblock %}
