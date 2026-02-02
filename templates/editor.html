@@ -1,0 +1,72 @@
+{% extends "base.html" %}
+
+{% block title %}Edit Pages - PDF Editor{% endblock %}
+
+{% block nav_extra %}
+<a href="{{ url_for('reset') }}" class="nav-link">Reset</a>
+{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="editor-header">
+        <div>
+            <h2>PDF Page Editor</h2>
+            <p class="page-count">Total Pages: <span id="pageCount">{{ total_pages }}</span></p>
+        </div>
+        <div class="editor-actions">
+            <button id="validateBtn" class="btn btn-secondary">
+                <span>✓</span> Validate Questions
+            </button>
+            <button id="extractBtn" class="btn btn-secondary">
+                <span>📤</span> Extract Questions
+            </button>
+            <button id="downloadBtn" class="btn btn-primary">
+                <span>📥</span> Download Merged PDF
+            </button>
+        </div>
+    </div>
+
+    <div class="selection-info" id="selectionInfo" style="display: none;">
+        <p><span id="selectedCount">0</span> page(s) selected</p>
+        <button id="deleteSelectedBtn" class="btn btn-danger">Delete Selected</button>
+    </div>
+
+    <div class="page-grid" id="pageGrid">
+        {% for page in pages %}
+        <div class="page-card" data-page-id="{{ page.id }}" data-pdf-id="{{ page.pdf_id }}">
+            <div class="page-thumbnail">
+                {% if page.thumbnail %}
+                <img src="{{ page.thumbnail }}" alt="Page {{ page.page_num }}" loading="lazy">
+                {% else %}
+                <div class="thumbnail-placeholder">
+                    <span>PDF Page</span>
+                </div>
+                {% endif %}
+            </div>
+            <div class="page-info">
+                <div class="page-number">Page {{ page.page_num }}</div>
+                <div class="page-source">{{ page.pdf_name }}</div>
+            </div>
+            <div class="page-actions">
+                <button class="btn-delete" data-page-id="{{ page.id }}">
+                    <span>🗑️</span> Remove
+                </button>
+            </div>
+            <div class="page-checkbox">
+                <input type="checkbox" class="page-select" data-page-id="{{ page.id }}">
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+
+    {% if total_pages == 0 %}
+    <div class="empty-state">
+        <p>No pages loaded. <a href="{{ url_for('index') }}">Upload some PDFs</a> to get started.</p>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{{ url_for('static', filename='js/editor.js') }}"></script>
+{% endblock %}

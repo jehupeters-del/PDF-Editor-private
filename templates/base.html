@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}PDF Editor{% endblock %}</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    {% block extra_css %}{% endblock %}
+</head>
+<body>
+    <nav class="navbar">
+        <div class="container">
+            <h1 class="logo">PDF Editor</h1>
+            <div class="nav-links">
+                <a href="{{ url_for('index') }}" class="nav-link">New Session</a>
+                {% block nav_extra %}{% endblock %}
+            </div>
+        </div>
+    </nav>
+
+    <main class="main-content">
+        {% block content %}{% endblock %}
+    </main>
+
+    <footer class="footer">
+        <div class="container">
+            <p>&copy; 2026 PDF Editor - Web Version</p>
+        </div>
+    </footer>
+
+    <!-- Modal for messages -->
+    <div id="modal" class="modal">
+        <div class="modal-content">
+            <span class="modal-close">&times;</span>
+            <h2 id="modal-title">Message</h2>
+            <div id="modal-body"></div>
+            <div class="modal-actions">
+                <button id="modal-close-btn" class="btn btn-primary">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="{{ url_for('static', filename='js/modal.js') }}"></script>
+    {% block extra_js %}{% endblock %}
+</body>
+</html>

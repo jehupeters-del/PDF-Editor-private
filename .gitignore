@@ -21,3 +21,24 @@ extraction_demo_pdfs/
 *.njsproj
 *.sln
 *.sw?
+
+# Flask Web App
+instance/
+.webassets-cache
+*.log
+.env
+.env.local
+venv/
+env/
+ENV/
+*.egg-info/
+dist/
+build/
+
+# Session data and uploads
+instance/uploads/
+
+# Temporary files
+*.tmp
+*.temp
+temp_*.pdf

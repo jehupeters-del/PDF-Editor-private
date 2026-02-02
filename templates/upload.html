@@ -1,0 +1,69 @@
+{% extends "base.html" %}
+
+{% block title %}Upload PDFs - PDF Editor{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="upload-container">
+        <div class="upload-header">
+            <h2>PDF Exam Editor</h2>
+            <p class="subtitle">Upload multiple PDF files to merge and edit</p>
+        </div>
+
+        <div class="upload-zone" id="uploadZone">
+            <div class="upload-icon">
+                <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                    <polyline points="17 8 12 3 7 8"></polyline>
+                    <line x1="12" y1="3" x2="12" y2="15"></line>
+                </svg>
+            </div>
+            <h3>Drag & Drop PDF Files Here</h3>
+            <p>or</p>
+            <label for="fileInput" class="btn btn-primary">Browse Files</label>
+            <input type="file" id="fileInput" multiple accept=".pdf" style="display: none;">
+            <p class="upload-hint">Maximum file size: 32MB per file</p>
+        </div>
+
+        <div id="fileList" class="file-list"></div>
+
+        <div class="upload-actions" id="uploadActions" style="display: none;">
+            <button id="uploadBtn" class="btn btn-success">Upload & Continue</button>
+            <button id="clearBtn" class="btn btn-secondary">Clear All</button>
+        </div>
+
+        <div id="uploadProgress" class="upload-progress" style="display: none;">
+            <div class="progress-bar">
+                <div class="progress-fill" id="progressFill"></div>
+            </div>
+            <p id="progressText">Uploading...</p>
+        </div>
+    </div>
+
+    <div class="features">
+        <h3>Features</h3>
+        <div class="feature-grid">
+            <div class="feature-item">
+                <h4>📄 Multi-File Upload</h4>
+                <p>Upload multiple PDF files simultaneously</p>
+            </div>
+            <div class="feature-item">
+                <h4>🔀 Merge & Reorder</h4>
+                <p>Combine PDFs and delete unwanted pages</p>
+            </div>
+            <div class="feature-item">
+                <h4>✓ Validate Questions</h4>
+                <p>Check for missing question numbers</p>
+            </div>
+            <div class="feature-item">
+                <h4>📥 Smart Export</h4>
+                <p>Download your merged exam PDF</p>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{{ url_for('static', filename='js/upload.js') }}"></script>
+{% endblock %}
