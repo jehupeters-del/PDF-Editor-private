@@ -3,7 +3,6 @@ PDF Editor - Flask Web Application
 A web application for loading, viewing, manipulating, and merging PDF files.
 """
 from flask import Flask, render_template, request, redirect, url_for, flash, session, jsonify, send_file
-from flask_session import Session
 from pathlib import Path
 from werkzeug.utils import secure_filename
 import os
@@ -11,6 +10,15 @@ import uuid
 import threading
 import time
 from typing import Dict, Any, Optional
+
+# Import Flask-Session with error handling
+try:
+    from flask_session import Session
+    FLASK_SESSION_AVAILABLE = True
+except ImportError:
+    FLASK_SESSION_AVAILABLE = False
+    print("WARNING: Flask-Session not installed. Install with: pip install Flask-Session")
+    print("Session data will be stored in-memory (not recommended for production)")
 
 from pdf_manager import PDFManager
 from pdf_viewer import PDFViewer
@@ -20,13 +28,19 @@ app = Flask(__name__)
 # Configuration
 app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'dev-secret-key-change-in-production')
 app.config['MAX_CONTENT_LENGTH'] = 50 * 1024 * 1024  # 50MB max file size
-app.config['SESSION_TYPE'] = 'filesystem'
-app.config['SESSION_FILE_DIR'] = './flask_session'
-app.config['SESSION_PERMANENT'] = False
-app.config['PERMANENT_SESSION_LIFETIME'] = 7200  # 2 hours
 
-# Initialize Flask-Session
-Session(app)
+# Flask-Session configuration (only if available)
+if FLASK_SESSION_AVAILABLE:
+    app.config['SESSION_TYPE'] = 'filesystem'
+    app.config['SESSION_FILE_DIR'] = './flask_session'
+    app.config['SESSION_PERMANENT'] = False
+    app.config['PERMANENT_SESSION_LIFETIME'] = 7200  # 2 hours
+    # Initialize Flask-Session
+    Session(app)
+else:
+    # Use default in-memory sessions
+    app.config['SESSION_PERMANENT'] = False
+    app.config['PERMANENT_SESSION_LIFETIME'] = 7200
 
 # Global task storage (in production, use Redis or database)
 background_tasks: Dict[str, Dict[str, Any]] = {}
@@ -651,39 +665,78 @@ def api_task_status(task_id):
 def download_extracted(task_id, file_index):
     """Download extracted/validated file"""
     if task_id not in background_tasks:
+        app.logger.error(f'Task not found: {task_id}')
         flash('Task not found', 'error')
         return redirect(url_for('index'))
     
     task = background_tasks[task_id]
+    output_path = None
+    output_name = None
     
-    if task['mode'] == 'extract_single':
-        output_path = task.get('output_path')
-        output_name = task.get('output_name', 'extracted.pdf')
-        
-        if output_path and Path(output_path).exists():
+    try:
+        if task['mode'] == 'extract_single':
+            output_path = task.get('output_path')
+            output_name = task.get('output_name', 'extracted.pdf')
+            
+            if not output_path:
+                app.logger.error(f'No output path in task {task_id}')
+                flash('No output file generated', 'error')
+                return redirect(url_for('index'))
+            
+            output_file = Path(output_path)
+            if not output_file.exists():
+                app.logger.error(f'File not found: {output_path}')
+                app.logger.info(f'Task data: {task}')
+                flash(f'Output file not found: {output_name}. The file may have been deleted or expired.', 'error')
+                return redirect(url_for('index'))
+            
+            # Use absolute path for send_file
             return send_file(
-                output_path,
+                str(output_file.absolute()),
                 as_attachment=True,
                 download_name=output_name,
                 mimetype='application/pdf'
             )
-    elif task['mode'] == 'extract_batch':
-        results = task.get('results', [])
-        if file_index < len(results):
+            
+        elif task['mode'] == 'extract_batch':
+            results = task.get('results', [])
+            if file_index >= len(results):
+                app.logger.error(f'Invalid file index {file_index} for task {task_id}')
+                flash(f'Invalid file index: {file_index}', 'error')
+                return redirect(url_for('task_status', task_id=task_id))
+            
             result = results[file_index]
             output_path = result.get('output_path')
             output_name = result.get('output_name', 'extracted.pdf')
             
-            if output_path and Path(output_path).exists():
-                return send_file(
-                    output_path,
-                    as_attachment=True,
-                    download_name=output_name,
-                    mimetype='application/pdf'
-                )
-    
-    flash('File not found', 'error')
-    return redirect(url_for('index'))
+            if not output_path:
+                app.logger.error(f'No output path for index {file_index} in task {task_id}')
+                flash('No output file generated for this PDF', 'error')
+                return redirect(url_for('task_status', task_id=task_id))
+            
+            output_file = Path(output_path)
+            if not output_file.exists():
+                app.logger.error(f'Batch file not found: {output_path}')
+                app.logger.info(f'Result data: {result}')
+                flash(f'Output file not found: {output_name}. The file may have been deleted or expired.', 'error')
+                return redirect(url_for('task_status', task_id=task_id))
+            
+            # Use absolute path for send_file
+            return send_file(
+                str(output_file.absolute()),
+                as_attachment=True,
+                download_name=output_name,
+                mimetype='application/pdf'
+            )
+        else:
+            app.logger.error(f'Invalid task mode: {task.get("mode")}')
+            flash('Invalid task mode', 'error')
+            return redirect(url_for('index'))
+            
+    except Exception as e:
+        app.logger.error(f'Error downloading file: {e}', exc_info=True)
+        flash(f'Error downloading file: {str(e)}', 'error')
+        return redirect(url_for('index'))
 
 
 if __name__ == '__main__':

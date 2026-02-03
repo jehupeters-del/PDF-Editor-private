@@ -101,9 +101,15 @@ class PDFManager:
                 reader = self.pdfs[pdf_id]['reader']
                 writer.add_page(reader.pages[page_index])
                 
-        # Write output
-        with open(output_path, 'wb') as output_file:
-            writer.write(output_file)
+        # Write output with error handling
+        try:
+            with open(output_path, 'wb') as output_file:
+                writer.write(output_file)
+        except OSError as e:
+            # Handle disk full, permission errors, etc.
+            raise OSError(f"Failed to write PDF to {output_path}: {str(e)}") from e
+        except Exception as e:
+            raise Exception(f"Unexpected error writing PDF to {output_path}: {str(e)}") from e
     
     def validate_question_continuity(self, pdf_path: str) -> Tuple[bool, List[int], int]:
         """
@@ -250,12 +256,23 @@ class PDFManager:
                 extracted_questions.extend(page_to_questions[page_num])
             
             # Save the output with compression and optimization
-            output_doc.save(
-                output_path,
-                garbage=4,  # Maximum garbage collection (removes unused objects)
-                deflate=True,  # Compress content streams
-                clean=True  # Clean and optimize the PDF structure
-            )
+            try:
+                output_doc.save(
+                    output_path,
+                    garbage=4,  # Maximum garbage collection (removes unused objects)
+                    deflate=True,  # Compress content streams
+                    clean=True  # Clean and optimize the PDF structure
+                )
+            except OSError as e:
+                # Handle disk full, permission errors, quota exceeded, etc.
+                output_doc.close()
+                doc.close()
+                raise OSError(f"Failed to save PDF to {output_path}. This may be due to disk space, permissions, or quota limits: {str(e)}") from e
+            except Exception as e:
+                output_doc.close()
+                doc.close()
+                raise Exception(f"Unexpected error saving PDF to {output_path}: {str(e)}") from e
+            
             output_doc.close()
             doc.close()
             

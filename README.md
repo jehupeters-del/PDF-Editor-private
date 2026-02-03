@@ -2,9 +2,20 @@
 
 A comprehensive web-based PDF editor for educators and professionals. Originally built as a desktop application with Tkinter, now migrated to Flask for easy deployment on PythonAnywhere and other hosting platforms.
 
-## 🚀 Quick Start
+## 🚀 Quick Deploy to PythonAnywhere
 
-### Local Development
+**Ready to deploy?** → Open **[YOUR_NEXT_STEPS.md](YOUR_NEXT_STEPS.md)** for your personalized deployment guide!
+
+**Step-by-step guide** → See **[START_HERE.md](START_HERE.md)** (~15 minutes)
+
+**Quick checklist** → Print **[DEPLOYMENT_CHECKLIST.md](DEPLOYMENT_CHECKLIST.md)**
+
+All guides are customized for:
+- Username: `jpeters`
+- Repository: https://github.com/jehupeters-del/PDF-Editor-private.git
+- Live URL: https://jpeters.pythonanywhere.com
+
+## 💻 Local Development
 ```bash
 # Install dependencies
 pip install -r requirements.txt
@@ -15,8 +26,19 @@ python app.py
 # Open browser to http://localhost:5000
 ```
 
-### Deploy to PythonAnywhere
-See [DEPLOYMENT_GUIDE.md](DEPLOYMENT_GUIDE.md) for complete deployment instructions.
+## 📚 Documentation
+
+### Deployment Guides (For jpeters)
+- **[YOUR_NEXT_STEPS.md](YOUR_NEXT_STEPS.md)** - Start here! What to do next
+- **[START_HERE.md](START_HERE.md)** - Step-by-step deployment (15 min)
+- **[DEPLOYMENT_CHECKLIST.md](DEPLOYMENT_CHECKLIST.md)** - Printable checklist
+- **[QUICK_SETUP_PYTHONANYWHERE.md](QUICK_SETUP_PYTHONANYWHERE.md)** - Quick reference
+- **[DEPLOYMENT_GUIDE.md](DEPLOYMENT_GUIDE.md)** - Comprehensive guide
+- **[PYTHONANYWHERE_FIXES.md](PYTHONANYWHERE_FIXES.md)** - Technical fixes explained
+
+### Other Documentation
+- **[README_FLASK.md](README_FLASK.md)** - Flask app technical details
+- **[MIGRATION_COMPLETE.md](MIGRATION_COMPLETE.md)** - Tkinter to Flask migration notes
 
 ## Features
 

@@ -1,4 +1,4 @@
-# Flask Web Application - Quick Start Guide
+# Flask Web Application - Deployment Guide (Python 3.13)
 
 ## Test Locally First
 
@@ -19,7 +19,7 @@
 4. **Stop the server:**
    - Press Ctrl+C in terminal
 
-## Deploy to PythonAnywhere
+## Deploy to PythonAnywhere (Python 3.13)
 
 ### Step 1: Create Account
 1. Go to https://www.pythonanywhere.com/
@@ -29,7 +29,7 @@
 ### Step 2: Upload Files
 Option A - Via Web Interface:
 1. Go to "Files" tab
-2. Create directory: `/home/yourusername/PDF-Editor`
+2. Create directory: `/home/jpeters/PDF-Editor-private`
 3. Upload all project files
 
 Option B - Via Git (recommended):
@@ -37,18 +37,30 @@ Option B - Via Git (recommended):
 2. Start a Bash console
 3. Run:
    ```bash
-   git clone YOUR_REPO_URL PDF-Editor
-   cd PDF-Editor
+   git clone https://github.com/jehupeters-del/PDF-Editor-private.git PDF-Editor-private
+   cd PDF-Editor-private
    ```
 
-### Step 3: Install Dependencies
+### Step 3: Create Virtual Environment (Python 3.13)
 In the Bash console:
 ```bash
-cd PDF-Editor
-pip3 install --user -r requirements.txt
+cd /home/jpeters/PDF-Editor-private
+mkvirtualenv venv --python=python3.13
+workon venv
 ```
 
-### Step 4: Create Required Directories
+### Step 4: Install Dependencies
+Still in the virtual environment:
+```bash
+pip install -r requirements.txt
+```
+
+**IMPORTANT**: Verify Flask-Session is installed:
+```bash
+python -c "from flask_session import Session; print('Flask-Session OK')"
+```
+
+### Step 5: Create Required Directories
 ```bash
 mkdir -p uploads
 mkdir -p static/temp
@@ -56,37 +68,53 @@ mkdir -p flask_session
 chmod 755 uploads static/temp flask_session
 ```
 
-### Step 5: Configure Web App
+### Step 6: Configure Web App
 1. Go to "Web" tab
 2. Click "Add a new web app"
 3. Choose "Manual configuration"
-4. Select Python 3.10 (or latest available)
+4. **Select Python 3.13** (critical!)
 5. Click through to create app
 
-### Step 6: Edit WSGI Configuration
+### Step 7: Set Virtual Environment
+In Web tab, find "Virtualenv" section:
+1. Enter: `/home/jpeters/.virtualenvs/venv`
+2. This links your web app to the virtual environment with all dependencies
+
+### Step 8: Edit WSGI Configuration
 1. In Web tab, click on WSGI configuration file link
 2. Delete all content
-3. Copy content from `pythonanywhere_wsgi.py`
+3. Copy content from `pythonanywhere_wsgi.py` in your project
 4. **IMPORTANT**: Update these lines:
    ```python
-   project_home = '/home/yourusername/PDF-Editor'  # Change 'yourusername'
+   project_home = '/home/jpeters/PDF-Editor-private'  # Change to your username
    os.environ['SECRET_KEY'] = 'your-random-secret-key-here'  # Change to random string
    ```
-5. Save file
+5. Save file (Ctrl+S or click Save button)
 
-### Step 7: Set Static Files
+### Step 9: Set Static Files
 Still in Web tab, scroll to "Static files" section:
-1. Add mapping:
+1. Click "Enter URL" under a new static file mapping
+2. Add mapping:
    - URL: `/static/`
-   - Directory: `/home/yourusername/PDF-Editor/static/`
+   - Directory: `/home/jpeters/PDF-Editor-private/static/`
 
-### Step 8: Reload Web App
+### Step 10: Reload Web App
 1. Scroll to top of Web tab
 2. Click green "Reload" button
-3. Wait for reload to complete
+3. Wait for reload to complete (~10 seconds)
 
-### Step 9: Test Your App
-1. Click the link at top of Web tab (e.g., `yourusername.pythonanywhere.com`)
+### Step 11: Check for Errors
+1. Click "Error log" link in Web tab
+2. Look for any import errors or issues
+3. If you see errors about Flask-Session:
+   ```bash
+   workon venv
+   pip install Flask-Session
+   # Then reload web app
+   ```
+
+### Step 12: Test Your App
+1. Click the link at top of Web tab: `jpeters.pythonanywhere.com`
 2. Test all features:
    - Upload PDFs
    - View pages
@@ -96,52 +124,103 @@ Still in Web tab, scroll to "Static files" section:
 
 ## Troubleshooting
 
+### "Import Error: flask_session"
+This is the most common issue. Fix it:
+```bash
+cd /home/jpeters/PDF-Editor-private
+workon venv
+pip install Flask-Session cachelib
+# Reload web app in Web tab
+```
+
+### "FileNotFoundError" when downloading files
+- Issue: Working directory is not set correctly
+- Solution: The updated WSGI file includes `os.chdir(project_home)` which fixes this
+- Make sure you copied the entire `pythonanywhere_wsgi.py` file
+
+### "OSError: write error"
+- **Cause**: Disk quota exceeded or insufficient permissions
+- **Solutions**:
+  1. Check disk usage: `du -sh /home/jpeters/PDF-Editor-private/*`
+  2. Clean up old files:
+     ```bash
+     find /home/jpeters/PDF-Editor-private/uploads -type f -mtime +1 -delete
+     find /home/jpeters/PDF-Editor-private/static/temp -type f -mtime +1 -delete
+     ```
+  3. Free tier limit is 512MB total. Consider upgrading if needed.
+  4. Check permissions: `ls -la uploads/`
+
 ### App shows "Something went wrong"
 - Check Error log (link in Web tab)
 - Common issues:
   - Wrong path in WSGI file
-  - Missing dependencies
+  - Missing Flask-Session dependency
   - Directory permissions
+  - Wrong Python version selected
 
 ### "Import Error: No module named 'flask'"
-- Dependencies not installed
-- Run: `pip3 install --user -r requirements.txt`
+- Dependencies not installed in virtual environment
+- Run:
+   ```bash
+   workon venv
+   pip install -r requirements.txt
+   ```
 - Make sure you're in the right directory
 
 ### Uploads not working
-- Check directory exists: `/home/yourusername/PDF-Editor/uploads/`
+- Check directory exists: `/home/jpeters/PDF-Editor-private/uploads/`
 - Check permissions: `chmod 755 uploads`
+- Check disk quota: `quota`
 
 ### Sessions not persisting
 - Check flask_session directory exists and is writable
 - Try clearing browser cookies
+- Verify Flask-Session is installed: `pip list | grep Flask-Session`
 
 ### Static files (CSS/thumbnails) not loading
 - Check Static files mapping in Web tab
 - URL should be `/static/`
-- Directory should be full path to static folder
+- Directory should be full path: `/home/jpeters/PDF-Editor-private/static/`
 
 ## Maintenance
 
-### Clean Up Old Files
-Create a scheduled task (in Tasks tab):
+### Clean Up Old Files (Critical for Free Tier)
+Create a scheduled task (in Tasks tab) to run daily:
 ```bash
-# Run daily at 3 AM
-find /home/yourusername/PDF-Editor/uploads/* -type d -mmin +120 -exec rm -rf {} + 2>/dev/null
-find /home/yourusername/PDF-Editor/static/temp/* -type d -mmin +120 -exec rm -rf {} + 2>/dev/null
-find /home/yourusername/PDF-Editor/flask_session/* -type f -mmin +120 -delete 2>/dev/null
+#!/bin/bash
+# Clean files older than 2 hours (120 minutes)
+find /home/jpeters/PDF-Editor-private/uploads/* -type d -mmin +120 -exec rm -rf {} + 2>/dev/null
+find /home/jpeters/PDF-Editor-private/static/temp/* -type d -mmin +120 -exec rm -rf {} + 2>/dev/null
+find /home/jpeters/PDF-Editor-private/flask_session/* -type f -mmin +120 -delete 2>/dev/null
+```
+
+**Or run manually when disk space is low:**
+```bash
+cd /home/jpeters/PDF-Editor-private
+find uploads -type f -delete
+find static/temp -type f -delete
+find flask_session -type f -delete
+```
+
+### Monitor Disk Usage
+```bash
+du -sh /home/jpeters/PDF-Editor-private/*
+quota  # Check your overall quota
 ```
 
 ### View Logs
-- Error log: Shows Python errors
+- Error log: Shows Python errors and exceptions
 - Server log: Shows HTTP requests
-- Both available in Web tab
+- Access log: Shows all page visits
+- All available in Web tab
 
 ### Update App
 If using Git:
 ```bash
-cd PDF-Editor
+cd /home/jpeters/PDF-Editor-private
 git pull
+workon venv
+pip install -r requirements.txt  # In case dependencies changed
 # Reload web app in Web tab
 ```
 
@@ -152,52 +231,117 @@ If uploading manually:
 ## Security Notes
 
 1. **Change SECRET_KEY**: Never use default key in production
-2. **File Size Limits**: Default is 50MB, adjust if needed
+   ```python
+   # Generate a strong key:
+   import secrets
+   print(secrets.token_hex(32))
+   ```
+
+2. **File Size Limits**: Default is 50MB, adjust in app.py if needed
 3. **Rate Limiting**: Consider adding for production use
 4. **Authentication**: Current version has no authentication (public access)
+5. **Keep Dependencies Updated**: Run `pip list --outdated` periodically
 
 ## Performance Tips
 
 1. **Free Tier Limits**:
    - 300-second request timeout
+   - 512MB disk space
    - Limited CPU time per day
    - Avoid processing very large PDFs
 
 2. **Optimization**:
    - Batch operations may timeout on free tier
    - Single-file operations work best
-   - Consider upgrading for heavy use
+   - Keep uploaded files under 10MB for best performance
+   - Regular cleanup is essential
 
 3. **Session Management**:
    - Sessions expire after 2 hours
    - Regular cleanup prevents disk space issues
+   - Each user gets their own session folder
+
+## Python 3.13 Specific Notes
+
+- **Compatibility**: All dependencies are Python 3.13 compatible
+- **Performance**: Python 3.13 offers improved performance over 3.10
+- **Virtual Environment**: Must use `mkvirtualenv` with `--python=python3.13`
+- **If 3.13 not available**: You can use Python 3.10+ (update WSGI config and virtual environment commands)
+
+## Common Error Messages and Solutions
+
+### "working directory not found"
+- Solution: WSGI file now includes `os.chdir(project_home)`
+- Make sure you updated the WSGI configuration
+
+### "flask_session module not found"
+- Solution: `workon venv && pip install Flask-Session`
+- Verify in WSGI config that virtualenv path is correct
+
+### "Permission denied" errors
+- Solution: `chmod 755 uploads static/temp flask_session`
+- May need to contact support if persistent
 
 ## Next Steps
 
 After successful deployment:
 1. Test all features thoroughly
-2. Set up cleanup cron job
+2. Set up cleanup scheduled task (critical!)
 3. Monitor error logs regularly
-4. Consider upgrading plan if needed
-5. Add custom domain (paid plans)
+4. Monitor disk usage
+5. Consider upgrading plan if needed
+6. Add custom domain (paid plans)
 
 ## Support Resources
 
 - PythonAnywhere Help: https://help.pythonanywhere.com/
+- PythonAnywhere Forums: https://www.pythonanywhere.com/forums/
 - Flask Documentation: https://flask.palletsprojects.com/
+- Python 3.13 What's New: https://docs.python.org/3.13/whatsnew/3.13.html
 - This project's README: See README_FLASK.md
 
 ## Quick Reference
 
-### Important Paths (replace 'yourusername')
-- Project: `/home/yourusername/PDF-Editor/`
-- WSGI: `/var/www/yourusername_pythonanywhere_com_wsgi.py`
+### Important Paths
+- Project: `/home/jpeters/PDF-Editor-private/`
+- WSGI: `/var/www/jpeters_pythonanywhere_com_wsgi.py`
+- Virtual Env: `/home/jpeters/.virtualenvs/venv`
 - Logs: Available in Web tab
-- Static: `/home/yourusername/PDF-Editor/static/`
+- Static: `/home/jpeters/PDF-Editor-private/static/`
+- Your URL: `https://jpeters.pythonanywhere.com`
 
 ### Important Commands
-- Install deps: `pip3 install --user -r requirements.txt`
-- Check Python: `python3 --version`
-- Test import: `python3 -c "import flask; print(flask.__version__)"`
+```bash
+# Activate virtual environment
+workon venv
+
+# Install/Update deps
+pip install -r requirements.txt
+
+# Check Python version
+python --version  # Should show 3.13.x
+
+# Test imports
+python -c "from flask_session import Session; print('OK')"
+python -c "import fitz; print(fitz.__version__)"
+
+# Check disk jpeters
+du -sh /home/yourusername/PDF-Editor-private/*
+
+# Clean up files
+find uploads -type f -delete
+```
+
+### Debugging Checklist
+- [ ] Python 3.13 selected in Web tab
+- [ ] Virtual environment created and set
+- [ ] All dependencies installed in venv
+- [ ] WSGI file updated with correct paths
+- [ ] Static files mapping configured
+- [ ] Directories created (uploads, static/temp, flask_session)
+- [ ] Permissions set correctly (755)
+- [ ] SECRET_KEY changed from default
+- [ ] Error log checked for import errors
+- [ ] Disk space available
 
 Good luck with your deployment! 🚀
