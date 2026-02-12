@@ -1,5 +1,7 @@
 # ✅ DEPLOYMENT CHECKLIST - jpeters
 
+> For Streamlit Community Cloud deployment, use **[STREAMLIT_DEPLOYMENT_CHECKLIST.md](STREAMLIT_DEPLOYMENT_CHECKLIST.md)** with entrypoint `streamlit_app.py`.
+
 ## Pre-Flight Check
 - [ ] Logged into PythonAnywhere as `jpeters`
 - [ ] On Dashboard page

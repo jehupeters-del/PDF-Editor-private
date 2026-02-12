@@ -1,6 +1,12 @@
-# PDF Editor - Flask Web Application
+# PDF Editor - Streamlit + Flask
 
-A comprehensive web-based PDF editor for educators and professionals. Originally built as a desktop application with Tkinter, now migrated to Flask for easy deployment on PythonAnywhere and other hosting platforms.
+A comprehensive web-based PDF editor for educators and professionals. Originally built as a desktop application with Tkinter, then migrated to Flask, and now includes a Streamlit deployment entrypoint for Streamlit Community Cloud.
+
+## 🚀 Quick Deploy to Streamlit Community Cloud
+
+For Streamlit deployment, use:
+- **Entry file:** `streamlit_app.py`
+- **Guide:** **[STREAMLIT_DEPLOYMENT.md](STREAMLIT_DEPLOYMENT.md)**
 
 ## 🚀 Quick Deploy to PythonAnywhere
 
@@ -20,15 +26,19 @@ All guides are customized for:
 # Install dependencies
 pip install -r requirements.txt
 
-# Run the development server
+# Run the Streamlit app (recommended)
+python -m streamlit run streamlit_app.py
+
+# Run the Flask development server (legacy/PythonAnywhere path)
 python app.py
 
-# Open browser to http://localhost:5000
+# Open browser to http://localhost:8501 (Streamlit)
 ```
 
 ## 📚 Documentation
 
 ### Deployment Guides (For jpeters)
+- **[STREAMLIT_DEPLOYMENT.md](STREAMLIT_DEPLOYMENT.md)** - Streamlit Cloud deployment guide
 - **[YOUR_NEXT_STEPS.md](YOUR_NEXT_STEPS.md)** - Start here! What to do next
 - **[START_HERE.md](START_HERE.md)** - Step-by-step deployment (15 min)
 - **[DEPLOYMENT_CHECKLIST.md](DEPLOYMENT_CHECKLIST.md)** - Printable checklist
@@ -69,6 +79,7 @@ Extract and organize questions from test PDFs:
 
 ## Architecture
 
+- **Primary Deploy Target**: Streamlit Community Cloud (`streamlit_app.py`)
 - **Backend**: Flask 3.1.0 with Flask-Session for state management
 - **Frontend**: Bootstrap 5.3.0 with responsive design
 - **PDF Processing**: PyPDF2 and PyMuPDF (fitz) for robust PDF operations
@@ -95,10 +106,10 @@ pip install -r requirements.txt
 
 3. Run the application:
 ```bash
-python app.py
+python -m streamlit run streamlit_app.py
 ```
 
-4. Open your browser to `http://localhost:5000`
+4. Open your browser to `http://localhost:8501`
 
 ## Usage
 
@@ -135,10 +146,13 @@ python app.py
 
 ```
 PDF-Editor/
+├── streamlit_app.py            # Main Streamlit application (Cloud entrypoint)
 ├── app.py                      # Main Flask application
 ├── pdf_manager.py              # PDF processing logic
 ├── pdf_viewer.py               # Thumbnail generation
 ├── requirements.txt            # Python dependencies
+├── .streamlit/
+│   └── config.toml             # Streamlit configuration
 ├── templates/                  # HTML templates
 │   ├── base.html              # Base template with Bootstrap
 │   ├── index.html             # Home page
@@ -160,6 +174,7 @@ Legacy (Desktop Version):
 ## Documentation
 
 - **[README_FLASK.md](README_FLASK.md)** - Detailed Flask application documentation
+- **[STREAMLIT_DEPLOYMENT.md](STREAMLIT_DEPLOYMENT.md)** - Streamlit Cloud deployment instructions
 - **[DEPLOYMENT_GUIDE.md](DEPLOYMENT_GUIDE.md)** - PythonAnywhere deployment instructions
 - **[MIGRATION_COMPLETE.md](MIGRATION_COMPLETE.md)** - Migration summary from Tkinter to Flask
 - **[BUGFIX_REQUEST_CONTEXT.md](BUGFIX_REQUEST_CONTEXT.md)** - Request context bug fix details
@@ -194,6 +209,7 @@ python create_test_pdfs.py
 
 - Flask==3.0.0
 - Flask-Session==0.5.0
+- streamlit>=1.54.0
 - Werkzeug==3.0.1
 - PyPDF2==3.0.1
 - PyMuPDF==1.24.0
@@ -215,7 +231,7 @@ This project is licensed under the MIT License - see the LICENSE file for detail
 
 ## Acknowledgments
 
-- Built with Flask and Bootstrap
+- Built with Streamlit and Flask
 - PDF processing powered by PyPDF2 and PyMuPDF
 - Originally developed as a desktop application for educators
 
