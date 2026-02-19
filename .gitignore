@@ -10,16 +10,14 @@ env/
 ENV/
 .venv
 
-# Flask session and uploads
-flask_session/
-uploads/
-static/temp/
-
 # Test files and temporary outputs
 test_*.pdf
 sample*.pdf
 out_test.png
+thumbnail.png
+merged.pdf
 extraction_demo_pdfs/
+tests/test_pdfs/
 
 # Editor directories and files
 .vscode/*
