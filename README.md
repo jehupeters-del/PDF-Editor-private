@@ -1,8 +1,25 @@
 # PDF Editor
 
-A command-line tool for PDF manipulation — merge, extract question pages, validate question continuity, generate thumbnails, and smart-rename files.
+A local tool for PDF manipulation — merge, extract question pages, validate question continuity, generate thumbnails, and smart-rename files.
 
-## Usage
+Includes both a **desktop GUI** and a **command-line interface**.
+
+## Quick Start (GUI)
+
+```bash
+python gui.py
+```
+
+The GUI has four tabs:
+
+| Tab | What it does |
+|-----|------|
+| **Merge** | Add PDFs, reorder with ▲/▼, remove, then merge into one file |
+| **Extract** | Select PDFs → extracts only question pages (keeps title page) |
+| **Validate** | Select PDFs → checks that questions 1–N are all present |
+| **Info / Rename** | View page count, detected questions, generate thumbnail, apply smart rename |
+
+## Command-Line Usage
 
 ```bash
 # Show help
@@ -57,6 +74,7 @@ python main.py info exam.pdf
 
 ```
 PDF-Editor/
+├── gui.py            # Desktop GUI (Tkinter)
 ├── main.py           # CLI entry point (argparse)
 ├── pdf_manager.py    # Core PDF logic (merge, extract, validate, rename)
 ├── pdf_viewer.py     # Thumbnail generation utility
